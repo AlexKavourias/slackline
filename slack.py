@@ -1,7 +1,7 @@
 from slackclient import SlackClient
 
-def get_client(token='4577027817.4577075131'):
+def get_client(token):
     return SlackClient(token)
 
-print get_client().api_call('api.test')
-
+token = open('token.txt').read()
+print get_client(token)
