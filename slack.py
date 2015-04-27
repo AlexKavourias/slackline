@@ -7,11 +7,16 @@ class SlackLine(object):
 
     def __init__(self, token=None, channel_id=None, channel_name=None):
         assert token or 'token.txt' in os.listdir(os.getcwd())
-        self.client = self.get_client(token if token else open('token.txt').read())
-        self.server = self.client.server
+	self.token = token if token else open('token.txt').read().replace('\n', '')
+        print self.token == 'xoxp-4577027817-4577027827-4593258444-2832e3'
+	self.client = self.get_client(self.token)
+	self.server = self.client.server
         self._logs = []
         #Attach All Channels in the User's view
         #TODO
+
+    def test_is_authenticated(self):
+	return self.client.api_call('channels.list')	
 
     def switch_channel(self): #TODO
         pass
@@ -32,4 +37,5 @@ class SlackLine(object):
                 break
         cmd = raw_input('Exit SlackLine? [Y/n]')
 
-client = SlackLine().client
+client = SlackLine()
+print client.test_is_authenticated()
