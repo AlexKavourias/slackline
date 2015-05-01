@@ -1,4 +1,5 @@
 from slackclient import SlackClient
+from slack_screen import SlackTerminal
 import os
 import json
 import threading
@@ -48,23 +49,16 @@ class SlackLine(object):
     def get_client(self, token):
         return SlackClient(token)
 
-    def chat_forever(self):
-        print 'Welcome to SlackLine!'
-        print 'Talking in Chat : %s' % self.current_channel.name
-        self.server.ping()
-        while True:
-            cmd = raw_input('>>> ')
-            if cmd.startswith('quit'):
-                self.flush_logs()
-                break
-            else:
-                self.current_channel.send_message(cmd)
-
-    def start(self):
-        stream = MessageReceiver(self, self._user_id)
-        stream_thread = threading.Thread(target=stream.read_messages, args=())
+    @staticmethod
+    def start():
+        slack = SlackLine('alex')
+        stream = MessageReceiver(slack, slack._user_id)
+        terminal = SlackTerminal(slack)
+        stream_thread = threading.Thread(target=stream.read_messages, args=(terminal,))
         stream_thread.daemon = True
         stream_thread.start()
+        terminal.simulate_raw_input()
+
 class MessageReceiver(object):
     """ Receive messages over real-time messaing api
         Filters out messages that belong to current user
@@ -77,27 +71,17 @@ class MessageReceiver(object):
         #Filters all user messages received that match this id
         self.filter_id = user_id
 
-    def read_messages(self):
-        def blank_current_readline():
-            (rows, cols) = struct.unpack('hh', fcntl.ioctl(sys.stdout, termios.TIOCGWINSZ, '1234'))
-            text_len = len(readline.get_line_buffer())+2
-            sys.stdout.write('\x1b[2k')
-            sys.stdout.write('\x1b[1A\x1b[2K'*(text_len/cols))
-            sys.stdout.write('\x1b[0G')
-        first = True
+    def read_messages(self, terminal):
         while True:
             data = self.client.rtm_read()
+            messages = []
             if data:
+                #terminal.add_message('DEBUG', data)
                 for msg in data:
-                    if not first and 'text' in msg and 'user' in msg:#and msg['user'] != self.filter_id:
-                        print self._slackline._ids_to_names[msg['user']] + ' : ' +  msg['text']
-                        blank_current_readline()
-                        sys.stdout.write('>>> ' + readline.get_line_buffer())
-                        sys.stdout.flush()
-                first = False
-                time.sleep(.250)
+                    if 'text' in msg and 'user' in msg and msg['user'] != self.filter_id and self._slackline.current_channel.id == msg['channel']:
+                        terminal.add_message(self._slackline._ids_to_names[msg['user']], msg['text'])
+            time.sleep(.250)
 
 if __name__ == '__main__':
     client = SlackLine('alex')
     client.start()
-    client.chat_forever()

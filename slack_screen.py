@@ -1,6 +1,7 @@
 import curses
 import os
-import threading
+import time
+from threading import Thread, Lock
 
 class SlackTerminal(object):
     """
@@ -14,7 +15,8 @@ class SlackTerminal(object):
     _MAX_MESSAGES = None
     _MESSAGE_CHAR_LIMIT = None
 
-    def __init__(self):
+    def __init__(self, slack_client):
+        self.slack_client = slack_client
         #Necessary curses setup
         self.stdscr = curses.initscr()
         self.height, self.width = self.stdscr.getmaxyx()
@@ -29,6 +31,7 @@ class SlackTerminal(object):
         self._INPUT_COL = self.width
         #Setup message list
         self._messages = []
+        self._lock = Lock()
 
     def _update_screen(self):
         """Redraws ALL messages to screen.  Should only be called AFTER a emssage has been added"""
@@ -36,14 +39,18 @@ class SlackTerminal(object):
             self.stream_win.addstr(len(self._messages)-1, 0, self._messages[-1])
         else:
             #display the most recent messages that will fit on screen
+            self.stream_win.clear()
             for row, message in enumerate(self._messages[-self._MAX_MESSAGES:]):
-                self.clear_row(row)
+                #self.clear_row(row)
                 self.stream_win.addstr(row, 0, message)
         self.stream_win.refresh()
 
-    def add_message(self, user, message):
-        self._messages.append('%s : %s' % (user, message))
-        self._update_screen()
+    def add_message(self, user, message, send=False):
+        with self._lock:
+            self._messages.append('%s : %s' % (user, message))
+            self._update_screen()
+        if send:
+            self.slack_client.current_channel.send_message(message)
 
     def clear_row(self, row_num):
         self.stream_win.move(row_num, 0)
@@ -57,7 +64,7 @@ class SlackTerminal(object):
             input = self.input_win.getstr(0, 4, self._MESSAGE_CHAR_LIMIT)
             if input == 'quit' or input == 'q':
                 break
-            self.add_message('alex', input)
+            self.add_message('alex', input, send=True)
             self.input_win.clear()
         curses.nocbreak()
         self.stream_win.clear()
@@ -65,6 +72,4 @@ class SlackTerminal(object):
         self.stream_win.refresh()
         self.stdscr.keypad(0)
         curses.endwin()
-
-SlackTerminal().simulate_raw_input()
-os.system('reset')
+        os.system('reset')
