@@ -55,7 +55,8 @@ class SlackLine(object):
             slack = SlackLine('alex')
             stream = MessageReceiver(slack, slack._user_id)
             terminal = SlackTerminal(slack)
-            stream_thread = threading.Thread(target=stream.read_messages, args=(terminal,))
+            stream_thread = threading.Thread(target=stream.read_messages,
+                                            args=(terminal, stream.basic_filter))
             stream_thread.daemon = True
             stream_thread.start()
             terminal.simulate_raw_input()
@@ -64,7 +65,7 @@ class SlackLine(object):
             exit()
 
 class MessageReceiver(object):
-    """ Receive messages over real-time messaing api
+    """ Receive messages over real-time messaging api
         Filters out messages that belong to current user
     """
 
@@ -75,16 +76,26 @@ class MessageReceiver(object):
         #Filters all user messages received that match this id
         self.filter_id = user_id
 
-    def read_messages(self, terminal):
+    def read_messages(self, terminal, filter_func):
         while True:
             data = self.client.rtm_read()
             messages = []
             if data:
                 #terminal.add_message('DEBUG', data)
                 for msg in data:
-                    if 'text' in msg and 'user' in msg and msg['user'] != self.filter_id and self._slackline.current_channel.id == msg['channel']:
+                    if filter_func(msg):
                         terminal.add_message(self._slackline._ids_to_names[msg['user']], msg['text'])
             time.sleep(.250)
+
+    def basic_filter(self, msg):
+        """
+           Returns True if
+             'text' is in the message dictionary
+             the 'from user' is not the user currently using slackline
+             the channel the message originated in eqauls the current channel
+        """
+        return 'text' in msg and 'user' in msg and msg['user'] != self.filter_id\
+            and self._slackline.current_channel.id == msg['channel']
 
 if __name__ == '__main__':
     client = SlackLine('alex')
