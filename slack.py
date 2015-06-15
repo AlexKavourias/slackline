@@ -51,13 +51,17 @@ class SlackLine(object):
 
     @staticmethod
     def start():
-        slack = SlackLine('alex')
-        stream = MessageReceiver(slack, slack._user_id)
-        terminal = SlackTerminal(slack)
-        stream_thread = threading.Thread(target=stream.read_messages, args=(terminal,))
-        stream_thread.daemon = True
-        stream_thread.start()
-        terminal.simulate_raw_input()
+        try:
+            slack = SlackLine('alex')
+            stream = MessageReceiver(slack, slack._user_id)
+            terminal = SlackTerminal(slack)
+            stream_thread = threading.Thread(target=stream.read_messages, args=(terminal,))
+            stream_thread.daemon = True
+            stream_thread.start()
+            terminal.simulate_raw_input()
+        except KeyboardInterrupt:
+            terminal.teardown()
+            exit()
 
 class MessageReceiver(object):
     """ Receive messages over real-time messaing api

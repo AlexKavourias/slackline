@@ -68,7 +68,7 @@ class SlackTerminal(object):
             self.input_win.clear()
         curses.nocbreak()
         self.teardown()
-        
+
     def teardown(self):
         """ Clear windows and reset the terminal back to default system settings """
         self.stream_win.clear()
