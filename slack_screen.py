@@ -47,7 +47,10 @@ class SlackTerminal(object):
 
     def add_message(self, user, message, send=False):
         with self._lock:
-            self._messages.append('%s : %s' % (user, message))
+            if user:
+                self._messages.append('%s : %s' % (user, message))
+            else:
+                self._messages.append('     %s' % message)
             self._update_screen()
         if send:
             self.slack_client.current_channel.send_message(message)
@@ -64,7 +67,12 @@ class SlackTerminal(object):
             input = self.input_win.getstr(0, 4, self._MESSAGE_CHAR_LIMIT)
             if input == 'quit' or input == 'q':
                 break
-            self.add_message('alex', input, send=True)
+            elif input == 'switch':
+                pass
+            elif input == 'list channel':
+                self.slack_client.list_users_in_channel()
+            else:
+                self.add_message('alex', input, send=True)
             self.input_win.clear()
         curses.nocbreak()
         self.teardown()

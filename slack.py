@@ -4,7 +4,6 @@ import os
 import json
 import threading
 import time
-import readline, sys, struct, fcntl, termios
 import pprint
 
 class SlackLine(object):
@@ -18,6 +17,7 @@ class SlackLine(object):
         self.client = self.get_client(self.token)
 	self.server = self.client.server
 	self.name = slack_name
+        self.terminal = None #Setup in start
         self._logs = []
         self.attach_all_channels()
         if channel_id:
@@ -36,6 +36,21 @@ class SlackLine(object):
             self._name_to_ids[user['name']] = user['id']
         self._ids_to_names = {v:k for k,v in self._name_to_ids.items()}
 
+    def _execute_command(self, input):
+        """ Checks if the input contains a command in the command mapping, otherwise
+            logs and error
+        """
+        self._command_mapping.get(input.split()[0], None)
+
+    def list_users_in_channel(self):
+        self.terminal.add_message('Log', 'Current Users in %s' % self.current_channel.name)
+        resp = self.server.api_call('channels.info', channel=self.current_channel.id)['memmbers']
+        for user_id in resp:
+            self.terminal.add_message(self._ids_to_names[user_id])
+
+    def list_channels(self):
+        pass
+
     def attach_all_channels(self):
         for channel in json.loads(self.client.api_call('channels.list'))['channels']:
             self.server.attach_channel(channel['name'], channel['id'])
@@ -43,8 +58,11 @@ class SlackLine(object):
     def test_is_authenticated(self):
 	return json.loads(self.client.api_call('channels.list'))['ok']
 
-    def switch_channel(self): #TODO
-        pass
+    def switch_channel(self, channel_name=None, channel_id=None):
+        if not (channel_name or channel_id):
+            self.terminal.add_message("Error: Specify channel_name or channel_id")
+        for chnl in self.server.channels:
+            print chnl
 
     def get_client(self, token):
         return SlackClient(token)
@@ -54,14 +72,14 @@ class SlackLine(object):
         try:
             slack = SlackLine('alex')
             stream = MessageReceiver(slack, slack._user_id)
-            terminal = SlackTerminal(slack)
+            slack.terminal = SlackTerminal(slack)
             stream_thread = threading.Thread(target=stream.read_messages,
-                                            args=(terminal, stream.basic_filter))
+                                            args=(slack.terminal, stream.basic_filter))
             stream_thread.daemon = True
             stream_thread.start()
-            terminal.simulate_raw_input()
+            slack.terminal.simulate_raw_input()
         except KeyboardInterrupt:
-            terminal.teardown()
+            slack.terminal.teardown()
             exit()
 
 class MessageReceiver(object):
@@ -98,5 +116,4 @@ class MessageReceiver(object):
             and self._slackline.current_channel.id == msg['channel']
 
 if __name__ == '__main__':
-    client = SlackLine('alex')
-    client.start()
+    SlackLine.start()
