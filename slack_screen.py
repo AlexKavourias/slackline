@@ -61,8 +61,11 @@ class SlackTerminal(object):
             if input == 'quit' or input == 'q':
                 break
             elif input == 'switch':
+                #self.slack_client.switch_channels()
                 pass
-            elif input == 'list channel':
+            elif input == "list channels":
+                self.slack_client.list_channels()
+            elif input == 'list members':
                 self.slack_client.list_users_in_channel()
             else:
                 self.add_message('alex', input, send=True)

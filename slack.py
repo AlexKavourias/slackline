@@ -9,7 +9,7 @@ class SlackLine(object):
     _name_to_ids = None
     _ids_to_names = None
     _user_id = None
-    _
+    
     _commands = ("lc", "sc", "exit", "quit", "is_online")
 
     def __init__(self, slack_name, token=None, channel_id=None, channel_name=None):
@@ -19,8 +19,8 @@ class SlackLine(object):
            slack.json format:
            {"token": ...}
         """
-        assert token or 'token.txt' in os.listdir(os.getcwd())
-        self.token = token if token else open('slack.json').read().replace('\n', '')
+        assert token or 'slack.json' in os.listdir(os.getcwd())
+        self.token = token if token else json.loads(open('slack.json').read().replace('\n', ''))['token']
         self.client = self.get_client(self.token)
         self.server = self.client.server
         self.name = slack_name
@@ -51,9 +51,9 @@ class SlackLine(object):
             self.terminal.add_message(self._ids_to_names[user_id])
 
     def list_channels(self):
-        self.terminal.add_message("Channel List (type 'switch <channel name or #>'")
+        self.terminal.add_message(None, "Channel List (type 'switch <channel name or #>'")
         for number, channel in enumerate(self.channels):
-            self.terminal.add_message("\t%s) %s (%s)" % (number, channel.name, channel.id))
+            self.terminal.add_message(None, "\t%s) %s (%s)" % (number, channel.name, channel.id))
 
     def switch_channels(self, channel_name=None, channel_id=None):
         if not (channel_id or channel_name):
@@ -82,7 +82,9 @@ class SlackLine(object):
             print chnl
 
     def get_client(self, token):
-        return SlackClient(token)
+        a = SlackClient(token)
+        print a.server
+        return a
 
     @staticmethod
     def start():
@@ -97,7 +99,7 @@ class SlackLine(object):
             slack.terminal.simulate_raw_input()
         except KeyboardInterrupt:
             slack.terminal.teardown()
-            exit()
+            exit(0)
 
 class MessageReceiver(object):
     """ Receive messages over real-time messaging api
