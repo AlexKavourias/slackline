@@ -1,12 +1,11 @@
 import curses
 import os
-import time
 from threading import Thread, Lock
 
 class SlackTerminal(object):
     """
-        Class for representing the  split screen needed to correctly display a real-time stream
-        of messages and the input dialogue.
+        Class for representing the split screen needed to correctly display a real-time stream
+        of messages and input dialogue.
 
         This is done using curses to separate the terminal into a streaming window and an input window
     """
@@ -17,19 +16,11 @@ class SlackTerminal(object):
 
     def __init__(self, slack_client):
         self.slack_client = slack_client
-        #Necessary curses setup
-        self.stdscr = curses.initscr()
-        self.height, self.width = self.stdscr.getmaxyx()
-        curses.echo()
-        curses.cbreak()
-        #setup split-screens
-        self.stream_win = curses.newwin(self.height-1, self.width, 0, 0)
-        self.input_win = curses.newwin(1, self.width, self.height-1, 0)
+        self._setup_curses()
         self._MESSAGE_CHAR_LIMIT = self.width
         self._MAX_MESSAGES = self.stream_win.getmaxyx()[0]
-        self._INPUT_ROW = self.height-1
+        self._INPUT_ROW = self.height - 1
         self._INPUT_COL = self.width
-        #Setup message list
         self._messages = []
         self._lock = Lock()
 
@@ -60,6 +51,8 @@ class SlackTerminal(object):
         self.stream_win.clrtoeol()
 
     def simulate_raw_input(self):
+        """ Prompts the message dialogue
+        """
         curses.echo()
         while True:
             self.input_win.addstr('>>> ')
@@ -76,6 +69,16 @@ class SlackTerminal(object):
             self.input_win.clear()
         curses.nocbreak()
         self.teardown()
+
+    def _setup_curses(self):
+        #Necessary curses setup
+        self.stdscr = curses.initscr()
+        self.height, self.width = self.stdscr.getmaxyx()
+        curses.echo()
+        curses.cbreak()
+        #setup split-screens
+        self.stream_win = curses.newwin(self.height-1, self.width, 0, 0)
+        self.input_win = curses.newwin(1, self.width, self.height-1, 0)
 
     def teardown(self):
         """ Clear windows and reset the terminal back to default system settings """
