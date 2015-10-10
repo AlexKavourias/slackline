@@ -23,4 +23,4 @@ Setting up your dependencies
   python slack.py
 ```
 
-If for some reason SlackLine (sorry!), your terminal will look like it's had a really bad day.  Don't fret, just type "reset" and hit enter, or close out the terminal tab.
+If for some reason SlackLine  crashes (sorry!), your terminal will look like it's had a really bad day.  Don't fret, just type "reset" and hit enter, or close out the terminal tab.
