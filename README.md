@@ -1,6 +1,7 @@
 # slackline
 A Simple command line version of Slack
 
+Slack is a cool chat client that is great for workplace teams.  I like to describe it as IRC chat with modern day integrations
 
 Sadly, this does not work on Windows, only unix systems.  There's no Windows port for the curses module, which is what is used to create a split screen in the terminal.
 
